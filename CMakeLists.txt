@@ -1,0 +1,31 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(VARIANT)
+
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+INCLUDE(cmake/locate_library.cmake)
+
+FIND_PACKAGE(Boost 1.40.0)
+
+LOCATE_LIBRARY(LIBMSGPACK "msgpack.hpp" "msgpack")
+
+INCLUDE_DIRECTORIES(
+    ${Boost_INCLUDE_DIRS}
+    ${LIBMSGPACK_INCLUDE_DIRS}
+)
+
+LINK_DIRECTORIES(
+    ${Boost_LIBRARY_DIRS}
+    ${LIBMSGPACK_LIBRARY_DIRS}
+)
+
+ADD_EXECUTABLE(variant
+    main
+    dynamic)
+
+TARGET_LINK_LIBRARIES(variant
+    msgpack
+    json)
+
+SET_TARGET_PROPERTIES(variant PROPERTIES
+    COMPILE_FLAGS "-std=c++0x -W -Wall -Werror -pedantic -O3 -g")
