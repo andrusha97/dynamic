@@ -21,7 +21,7 @@ LINK_DIRECTORIES(
 
 ADD_EXECUTABLE(variant
     main
-    dynamic)
+    variant)
 
 TARGET_LINK_LIBRARIES(variant
     msgpack
