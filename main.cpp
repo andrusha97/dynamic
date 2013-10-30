@@ -5,7 +5,7 @@
 
 #include <json/json.h>
 
-#include "variant.hpp"
+#include "dynamic.hpp"
 #include "traits.hpp"
 
 using namespace cocaine;
@@ -20,32 +20,32 @@ struct print_visitor :
     }
 
     void
-    operator()(const variant_t::null_t&) const {
+    operator()(const dynamic_t::null_t&) const {
         std::cout << "null";
     }
 
     void
-    operator()(const variant_t::bool_t& v) const {
+    operator()(const dynamic_t::bool_t& v) const {
         std::cout << (v ? "True" : "False");
     }
 
     void
-    operator()(const variant_t::int_t& v) const {
+    operator()(const dynamic_t::int_t& v) const {
         std::cout << v;
     }
 
     void
-    operator()(const variant_t::double_t& v) const {
+    operator()(const dynamic_t::double_t& v) const {
         std::cout << v;
     }
 
     void
-    operator()(const variant_t::string_t& v) const {
+    operator()(const dynamic_t::string_t& v) const {
         std::cout << "'" << v << "'";
     }
 
     void
-    operator()(const variant_t::array_t& v) const {
+    operator()(const dynamic_t::array_t& v) const {
         std::cout << "[" << std::endl;
 
         bool print_coma = false;
@@ -62,7 +62,7 @@ struct print_visitor :
     }
 
     void
-    operator()(const variant_t::object_t& v) const {
+    operator()(const dynamic_t::object_t& v) const {
         std::cout << "{" << std::endl;
 
         bool print_coma = false;
@@ -84,7 +84,7 @@ private:
 
 void
 test_msgpack() {
-    variant_t d1 = variant_t::object_t();
+    dynamic_t d1 = dynamic_t::object_t();
 
     auto& obj = d1.as_object();
     obj["key1"] = 5;
@@ -97,7 +97,7 @@ test_msgpack() {
 
     msgpack::sbuffer buffer;
     msgpack::packer<msgpack::sbuffer> packer(buffer);
-    cocaine::io::type_traits<variant_t>::pack(packer, d1);
+    cocaine::io::type_traits<dynamic_t>::pack(packer, d1);
 
     std::cout << "Original:" << std::endl;
     d1.apply(print_visitor(0));
@@ -105,7 +105,7 @@ test_msgpack() {
 
     std::cout << "Packaged: " << std::string(buffer.data(), buffer.size()) << std::endl;
 
-    variant_t d2 = cocaine::framework::unpack<variant_t>(buffer.data(), buffer.size());
+    dynamic_t d2 = cocaine::framework::unpack<dynamic_t>(buffer.data(), buffer.size());
 
     std::cout << "Unpackaged:" << std::endl;
     d2.apply(print_visitor(0));
@@ -118,7 +118,7 @@ const unsigned int MAX_DEPTH = 26;
 const size_t BASE_SIZE = 120;
 
 void
-fill_variant(variant_t& dest, unsigned int depth) {
+fill_dynamic(dynamic_t& dest, unsigned int depth) {
     int r = 0;
 
     if (depth < MAX_DEPTH / 5) {
@@ -144,17 +144,17 @@ fill_variant(variant_t& dest, unsigned int depth) {
         }
         dest = std::move(s);
     } else if (r == 4) {
-        std::vector<variant_t> v;
+        std::vector<dynamic_t> v;
         size_t size = rand() % (BASE_SIZE / 10);
         v.reserve(size);
         for (size_t i = 0; i < size; ++i) {
-            variant_t d;
-            fill_variant(d, depth + 1);
+            dynamic_t d;
+            fill_dynamic(d, depth + 1);
             v.emplace_back(std::move(d));
         }
         dest = std::move(v);
     } else if (r == 5) {
-        variant_t::object_t obj;
+        dynamic_t::object_t obj;
 
         for (size_t i = 0; i < size_t(rand() % (BASE_SIZE / 10)); ++i) {
             std::string key;
@@ -164,8 +164,8 @@ fill_variant(variant_t& dest, unsigned int depth) {
                 key.push_back(char(30 + rand() % 30));
             }
 
-            variant_t d;
-            fill_variant(d, depth + 1);
+            dynamic_t d;
+            fill_dynamic(d, depth + 1);
 
             obj[key] = std::move(d);
         }
@@ -174,10 +174,10 @@ fill_variant(variant_t& dest, unsigned int depth) {
     }
 }
 
-struct variant_walker :
+struct dynamic_walker :
     public boost::static_visitor<>
 {
-    variant_walker() :
+    dynamic_walker() :
         m_nulls(0),
         m_bools(0),
         m_ints(0),
@@ -190,32 +190,32 @@ struct variant_walker :
     }
 
     void
-    operator()(const variant_t::null_t&) {
+    operator()(const dynamic_t::null_t&) {
         ++m_nulls;
     }
 
     void
-    operator()(const variant_t::bool_t&) {
+    operator()(const dynamic_t::bool_t&) {
         ++m_bools;
     }
 
     void
-    operator()(const variant_t::int_t&) {
+    operator()(const dynamic_t::int_t&) {
         ++m_ints;
     }
 
     void
-    operator()(const variant_t::double_t&) {
+    operator()(const dynamic_t::double_t&) {
         ++m_doubles;
     }
 
     void
-    operator()(const variant_t::string_t&) {
+    operator()(const dynamic_t::string_t&) {
         ++m_strings;
     }
 
     void
-    operator()(const variant_t::array_t& v) {
+    operator()(const dynamic_t::array_t& v) {
         ++m_arrays;
 
         for (auto it = v.begin(); it != v.end(); ++it) {
@@ -224,7 +224,7 @@ struct variant_walker :
     }
 
     void
-    operator()(const variant_t::object_t& v) {
+    operator()(const dynamic_t::object_t& v) {
         ++m_objects;
 
         for (auto it = v.begin(); it != v.end(); ++it) {
@@ -243,27 +243,27 @@ public:
 };
 
 void
-test_variant_performance() {
+test_dynamic_performance() {
     srand(1337);
 
-    variant_t d;
+    dynamic_t d;
 
-    std::cout << "Start variant perfomance test" << std::endl;
+    std::cout << "Start dynamic perfomance test" << std::endl;
 
-    fill_variant(d, 0);
+    fill_dynamic(d, 0);
 
-    std::cout << "Variant object has been filled" << std::endl;
+    std::cout << "dynamic object has been filled" << std::endl;
 
     time_t now = time(0);
 
     for (int i = 0; i < 10; ++i) {
-        variant_walker w;
+        dynamic_walker w;
         d.apply(w);
     }
 
     std::cout << "Walk time: " << (time(0) - now) << std::endl;
 
-    variant_walker w;
+    dynamic_walker w;
 
     d.apply(w);
 
@@ -446,24 +446,24 @@ main() {
 //#define PERFORM_PERFORMANCE_TEST
 #ifdef PERFORM_PERFORMANCE_TEST
 //    for (size_t i = 0; i < 500; ++i) {
-//        test_variant_performance();
+//        test_dynamic_performance();
 //        //test_json_performance();
 //    }
 
-    //test_variant_performance();
+    //test_dynamic_performance();
     test_json_performance();
 
     return 0;
 #endif // PERFORM_PERFORMANCE_TEST
 
     {
-        variant_t d1;
+        dynamic_t d1;
         assert(d1.is_null());
         assert(!d1.convertible_to<int>());
     }
 
     {
-        variant_t d1 = false;
+        dynamic_t d1 = false;
         assert(d1.is_bool());
         assert(!d1.as_bool());
         assert(d1.to<bool>() == false);
@@ -473,7 +473,7 @@ main() {
     }
 
     {
-        variant_t d1 = -1;
+        dynamic_t d1 = -1;
         auto d2 = d1;
 
         assert(d1.is_int());
@@ -491,14 +491,14 @@ main() {
     }
 
     {
-        variant_t d1 = case2;
+        dynamic_t d1 = case2;
 
         assert(d1.is_int());
         assert(d1.to<myen>() == case2);
     }
 
     {
-        variant_t d1 = -1.0;
+        dynamic_t d1 = -1.0;
 
         assert(d1.is_double());
         assert(d1 == -1.0);
@@ -513,8 +513,8 @@ main() {
     }
 
     {
-        variant_t d1 = std::string("test1");
-        variant_t d2 = "test2";
+        dynamic_t d1 = std::string("test1");
+        dynamic_t d2 = "test2";
 
         assert(d1.is_string() && d1.as_string() == "test1");
         assert(d2.is_string());
@@ -530,7 +530,7 @@ main() {
     }
 
     {
-        variant_t d1 = std::vector<int>(5, 33);
+        dynamic_t d1 = std::vector<int>(5, 33);
 
         assert(d1.is_array());
         assert(d1.as_array().size() == 5);
@@ -553,7 +553,7 @@ main() {
 
     {
         int arr[4] = {1, 2, 3, 4};
-        variant_t d1 = arr;
+        dynamic_t d1 = arr;
 
         assert(d1.is_array());
         assert(d1.as_array().size() == 4);
@@ -565,7 +565,7 @@ main() {
     }
 
     {
-        variant_t d1 = std::tuple<int, std::string, std::string, double>(17, "test", "yo!", 1.0);
+        dynamic_t d1 = std::tuple<int, std::string, std::string, double>(17, "test", "yo!", 1.0);
 
         assert(d1.is_array());
         assert(d1.as_array().size() == 4);
@@ -589,7 +589,7 @@ main() {
     }
 
     {
-        variant_t d1;
+        dynamic_t d1;
 
         auto& obj = d1.as_object();
         obj["key1"] = 5;
@@ -639,7 +639,7 @@ main() {
         m["key1"] = "val1";
         m["key2"] = "val2";
 
-        variant_t d1 = m;
+        dynamic_t d1 = m;
 
         assert(d1.is_object());
         assert(d1.as_object().size() == 2);

@@ -1,14 +1,14 @@
-#ifndef COCAINE_VARIANT_TYPE_TRAITS_HPP
-#define COCAINE_VARIANT_TYPE_TRAITS_HPP
+#ifndef COCAINE_DYNAMIC_TYPE_TRAITS_HPP
+#define COCAINE_DYNAMIC_TYPE_TRAITS_HPP
 
 #include <cocaine/traits.hpp>
 
-#include "variant.hpp"
+#include "dynamic.hpp"
 
 namespace cocaine { namespace io {
 
 template<>
-struct type_traits<variant_t>
+struct type_traits<dynamic_t>
 {
     template<class Stream>
     struct pack_visitor :
@@ -21,32 +21,32 @@ struct type_traits<variant_t>
         }
 
         void
-        operator()(const variant_t::null_t&) const {
+        operator()(const dynamic_t::null_t&) const {
             m_packer << msgpack::type::nil();
         }
 
         void
-        operator()(const variant_t::bool_t& v) const {
+        operator()(const dynamic_t::bool_t& v) const {
             m_packer << v;
         }
 
         void
-        operator()(const variant_t::int_t& v) const {
+        operator()(const dynamic_t::int_t& v) const {
             m_packer << v;
         }
 
         void
-        operator()(const variant_t::double_t& v) const {
+        operator()(const dynamic_t::double_t& v) const {
             m_packer << v;
         }
 
         void
-        operator()(const variant_t::string_t& v) const {
+        operator()(const dynamic_t::string_t& v) const {
             m_packer << v;
         }
 
         void
-        operator()(const variant_t::array_t& v) const {
+        operator()(const dynamic_t::array_t& v) const {
             m_packer.pack_array(v.size());
 
             for(size_t i = 0; i < v.size(); ++i) {
@@ -55,7 +55,7 @@ struct type_traits<variant_t>
         }
 
         void
-        operator()(const variant_t::object_t& v) const {
+        operator()(const dynamic_t::object_t& v) const {
             m_packer.pack_map(v.size());
 
             for(auto it = v.begin(); it != v.end(); ++it) {
@@ -71,16 +71,16 @@ struct type_traits<variant_t>
     template<class Stream>
     static inline
     void
-    pack(msgpack::packer<Stream>& packer, const variant_t& source) {
+    pack(msgpack::packer<Stream>& packer, const dynamic_t& source) {
         source.apply(pack_visitor<Stream>(packer));
     }
 
     static inline
     void
-    unpack(const msgpack::object& object, variant_t& target) {
+    unpack(const msgpack::object& object, dynamic_t& target) {
         switch(object.type) {
             case msgpack::type::MAP: {
-                variant_t::object_t container;
+                dynamic_t::object_t container;
 
                 msgpack::object_kv *ptr = object.via.map.ptr,
                                    *const end = ptr + object.via.map.size;
@@ -98,14 +98,14 @@ struct type_traits<variant_t>
             } break;
 
             case msgpack::type::ARRAY: {
-                variant_t::array_t container;
+                dynamic_t::array_t container;
                 container.reserve(object.via.array.size);
 
                 msgpack::object *ptr = object.via.array.ptr,
                                 *const end = ptr + object.via.array.size;
 
                 for(unsigned int index = 0; ptr < end; ++ptr, ++index) {
-                    container.push_back(variant_t());
+                    container.push_back(dynamic_t());
                     unpack(*ptr, container.back());
                 }
 
@@ -133,7 +133,7 @@ struct type_traits<variant_t>
             } break;
 
             case msgpack::type::NIL: {
-                target = variant_t::null_t();
+                target = dynamic_t::null_t();
             }
         }
     }
@@ -141,4 +141,4 @@ struct type_traits<variant_t>
 
 }} // namespace cocaine::io
 
-#endif // COCAINE_VARIANT_TYPE_TRAITS_HPP
+#endif // COCAINE_DYNAMIC_TYPE_TRAITS_HPP
